@@ -2,8 +2,10 @@ import re
 import os
 import glob
 import shutil
+import string
+from termcolor import colored
 
-vmfName = 'test.vmf'
+vmfName = 'rp_expecto_day_vz4.vmf'
 garrysmodGarrysmodPath = "D:\Program Files (x86)\SteamLibrary\steamapps\common\GarrysMod\garrysmod"
 
 vmfFileName, vmfExtension = os.path.splitext(vmfName)
@@ -28,6 +30,24 @@ if os.path.isdir(contentsDistPath):
 
 os.mkdir(contentsDistPath)
 
+def strings(filename, min=1):
+    strs = []
+
+    with open(filename, errors="ignore") as f:  # Python 3.x
+    # with open(filename, "rb") as f:           # Python 2.x
+        result = ""
+        for c in f.read():
+            if c in string.printable:
+                result += c
+                continue
+            if len(result) >= min:
+                strs.append(result)
+            result = ""
+        if len(result) >= min:  # catch result at EOF
+            strs.append(result)
+    
+    return strs
+
 def findVtfPathsFromVmt(vmtPath):
     with open(vmtPath) as materialFile:
         materialFileContents = materialFile.read()
@@ -46,31 +66,41 @@ def findVtfPathsFromVmt(vmtPath):
     paths = {path for path in paths if os.path.isfile(path)}
 
     return paths
-    
+
+def copyFileWithDirs(filePath):
+    targetPath = os.path.join(contentsDistPath, os.path.dirname(os.path.relpath(filePath, garrysmodGarrysmodPath)))
+    os.makedirs(targetPath, exist_ok=True)
+    shutil.copy(filePath, targetPath)        
 
 for material in materials:
     sourcePath = os.path.join(garrysmodGarrysmodPath,material)
 
     if os.path.isfile(sourcePath):
-        targetPath = os.path.join(contentsDistPath, os.path.dirname(os.path.relpath(sourcePath, garrysmodGarrysmodPath)))
-        os.makedirs(targetPath, exist_ok=True)
-
-        shutil.copy(sourcePath, targetPath)
+        copyFileWithDirs(sourcePath)
 
         for path in findVtfPathsFromVmt(sourcePath):
-            targetPath = os.path.join(contentsDistPath, os.path.dirname(os.path.relpath(path, garrysmodGarrysmodPath)))
-            os.makedirs(targetPath, exist_ok=True)
-
-            shutil.copy(path, targetPath)
-            break
+            copyFileWithDirs(path)
 
 for model in models:
     sourcePath = os.path.join(garrysmodGarrysmodPath,model)
-    targetPath = os.path.join(contentsDistPath, os.path.dirname(model))
     
     if os.path.isfile(sourcePath):
-        os.makedirs(targetPath, exist_ok=True)
+        strs = strings(sourcePath)
+        materialPath = strs[-1].replace('/','\\')
+        materialPath = os.path.join('materials',materialPath)
+        materialRealPath = os.path.join(garrysmodGarrysmodPath,materialPath)
+
+        if (os.path.isdir(materialRealPath)):
+            for possibleMaterialName in strs[1:-1]:
+                possibleMaterialRealPath = os.path.join(materialRealPath,possibleMaterialName+'.vmt')
+                if (os.path.isfile(possibleMaterialRealPath)):
+                    copyFileWithDirs(possibleMaterialRealPath)
+                    for path in findVtfPathsFromVmt(possibleMaterialRealPath):
+                        copyFileWithDirs(path)
+        else:
+            print(colored("MATERIAL PATH NOT FOUND", 'red'), materialPath)
+
         for file in glob.glob(sourcePath[:-3]+'*'):
-            shutil.copy(file,targetPath)
+            copyFileWithDirs(file)
     else:
-        print("BULUNAMADI - "+model)
+        print(colored("MODEL NOT FOUND", 'red'), model)
