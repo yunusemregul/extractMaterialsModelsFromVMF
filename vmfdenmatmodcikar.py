@@ -28,6 +28,26 @@ if os.path.isdir(contentsDistPath):
 
 os.mkdir(contentsDistPath)
 
+def findVtfPathsFromVmt(vmtPath):
+    with open(vmtPath) as materialFile:
+        materialFileContents = materialFile.read()
+
+    possibleVtfFileNames = re.findall(r"\"([^%$ {[\n,]+?)\"", materialFileContents)
+    possibleVtfFileNames = {vtfPath for vtfPath in possibleVtfFileNames }
+    possibleVtfFileNames = {vtfPath.replace('/','\\').lower() for vtfPath in possibleVtfFileNames}
+    possibleVtfFileNames = {vtfPath.endswith('.vtf') and vtfPath or vtfPath+".vtf" for vtfPath in possibleVtfFileNames}
+    
+    paths = set()
+
+    for name in possibleVtfFileNames:
+        paths.add(os.path.join(os.path.dirname(sourcePath), name))
+        paths.add(os.path.join(garrysmodGarrysmodPath, 'materials', name))
+
+    paths = {path for path in paths if os.path.isfile(path)}
+
+    return paths
+    
+
 for material in materials:
     sourcePath = os.path.join(garrysmodGarrysmodPath,material)
 
@@ -37,26 +57,12 @@ for material in materials:
 
         shutil.copy(sourcePath, targetPath)
 
-        with open(sourcePath) as materialFile:
-            materialFileContents = materialFile.read()
+        for path in findVtfPathsFromVmt(sourcePath):
+            targetPath = os.path.join(contentsDistPath, os.path.dirname(os.path.relpath(path, garrysmodGarrysmodPath)))
+            os.makedirs(targetPath, exist_ok=True)
 
-        possibleVtfFileNames = re.findall(r"\"([^%$ {[\n,]+?)\"", materialFileContents)
-        possibleVtfFileNames = {vtfPath for vtfPath in possibleVtfFileNames }
-        possibleVtfFileNames = {vtfPath.replace('/','\\').lower() for vtfPath in possibleVtfFileNames}
-        possibleVtfFileNames = {vtfPath.endswith('.vtf') and vtfPath or vtfPath+".vtf" for vtfPath in possibleVtfFileNames}
-
-        for name in possibleVtfFileNames:
-            paths = set()
-            paths.add(os.path.join(os.path.dirname(sourcePath), name))
-            paths.add(os.path.join(garrysmodGarrysmodPath, 'materials', name))
-
-            for path in paths:
-                if os.path.isfile(path):
-                    targetPath = os.path.join(contentsDistPath, os.path.dirname(os.path.relpath(path, garrysmodGarrysmodPath)))
-                    os.makedirs(targetPath, exist_ok=True)
-
-                    shutil.copy(path, targetPath)
-                    break
+            shutil.copy(path, targetPath)
+            break
 
 for model in models:
     sourcePath = os.path.join(garrysmodGarrysmodPath,model)
