@@ -18,7 +18,6 @@ materials = set(materials)
 materials = {"materials" + (material[0]=='/' and material or '/'+material).lower() + ".vmt" for material in materials}
 materials = {material.replace('/','\\') for material in materials}
 
-
 models = re.findall(r"\"model\" \"(.+)\"", vmfContent)
 models = set(models)
 models = {model.replace('/','\\') for model in models}
@@ -30,11 +29,11 @@ if os.path.isdir(contentsDistPath):
 
 os.mkdir(contentsDistPath)
 
+# https://stackoverflow.com/a/17197027
 def strings(filename, min=1):
     strs = []
 
-    with open(filename, errors="ignore") as f:  # Python 3.x
-    # with open(filename, "rb") as f:           # Python 2.x
+    with open(filename, errors="ignore") as f:
         result = ""
         for c in f.read():
             if c in string.printable:
@@ -43,7 +42,7 @@ def strings(filename, min=1):
             if len(result) >= min:
                 strs.append(result)
             result = ""
-        if len(result) >= min:  # catch result at EOF
+        if len(result) >= min:
             strs.append(result)
     
     return strs
@@ -70,7 +69,7 @@ def findVtfPathsFromVmt(vmtPath):
 def copyFileWithDirs(filePath):
     targetPath = os.path.join(contentsDistPath, os.path.dirname(os.path.relpath(filePath, garrysmodGarrysmodPath)))
     os.makedirs(targetPath, exist_ok=True)
-    shutil.copy(filePath, targetPath)        
+    shutil.copy(filePath, targetPath)
 
 for material in materials:
     sourcePath = os.path.join(garrysmodGarrysmodPath,material)
@@ -87,6 +86,7 @@ for model in models:
     if os.path.isfile(sourcePath):
         strs = strings(sourcePath)
         materialPath = strs[-1].replace('/','\\')
+        materialPath = materialPath.lower()
         materialPath = os.path.join('materials',materialPath)
         materialRealPath = os.path.join(garrysmodGarrysmodPath,materialPath)
 
