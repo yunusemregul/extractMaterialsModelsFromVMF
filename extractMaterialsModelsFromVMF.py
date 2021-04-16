@@ -49,8 +49,7 @@ if os.path.isdir(contentsDistPath):
 os.mkdir(contentsDistPath)
 
 # https://stackoverflow.com/a/17197027
-
-def strings(filename, min=1):
+def strings(filename):
     strs = []
 
     with open(filename, errors="ignore") as f:
@@ -59,10 +58,10 @@ def strings(filename, min=1):
             if c in string.printable:
                 result += c
                 continue
-            if len(result) >= min:
+            if len(result)>0 and result not in strs:
                 strs.append(result)
             result = ""
-        if len(result) >= min:
+        if len(result)>0 and result not in strs:
             strs.append(result)
 
     return strs
